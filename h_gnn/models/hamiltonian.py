@@ -328,10 +328,25 @@ class GraphHamiltonian(nn.Module):
         create_graph: bool = False,
         dt: Optional[float] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute ∂H/∂q and ∂H/∂p for the full graph Hamiltonian."""
+        """Compute ∂H/∂q and ∂H/∂p for the full graph Hamiltonian.
+        
+        CRITICAL: When create_graph=True, we maintain gradient flow back
+        to model parameters for training. When False, we can detach inputs.
+        """
         with torch.enable_grad():
-            q_grad = q.detach().clone().requires_grad_(True)
-            p_grad = p.detach().clone().requires_grad_(True)
+            if create_graph:
+                # For training: DON'T detach inputs, maintain gradient flow
+                # Clone to avoid in-place modification issues, but don't detach
+                q_grad = q.clone()
+                p_grad = p.clone()
+                if not q_grad.requires_grad:
+                    q_grad.requires_grad_(True)
+                if not p_grad.requires_grad:
+                    p_grad.requires_grad_(True)
+            else:
+                # For inference: detach is fine, no backprop needed
+                q_grad = q.detach().clone().requires_grad_(True)
+                p_grad = p.detach().clone().requires_grad_(True)
             
             H = self.forward(q_grad, p_grad, edge_index, dt=dt)
             

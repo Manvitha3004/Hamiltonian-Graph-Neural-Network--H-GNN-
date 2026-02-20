@@ -1,0 +1,13 @@
+﻿python : D:\Personal Projects\Hamiltonian Graph Neural Network 
+(H-GNN)\h_gnn\integrators\symplectic.py:29: UserWarning: To copy construct 
+from a tensor, it is recommended to use sourceTensor.detach().clone() or 
+sourceTensor.detach().clone().requires_grad_(True), rather than 
+torch.tensor(sourceTensor).
+At line:1 char:1
++ python -m h_gnn.experiments.final_validation 2>&1 | Out-File -FilePat ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (D:\Personal Pro...(sourceTensor). 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  self.register_buffer("dt", torch.tensor(dt, dtype=torch.float64))

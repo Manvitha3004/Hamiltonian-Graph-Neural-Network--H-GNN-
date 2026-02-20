@@ -1,201 +1,169 @@
 # Hamiltonian Graph Neural Network (H-GNN)
 
-A structure-preserving graph neural network for orbital mechanics and space situational awareness.
+**Learning Structured Corrections to Incomplete Hamiltonians via Symplectic Neural Parameterization**
 
-## Key Principles
+---
 
-1. **Hamiltonian must be scalar and invariant** - The learned Hamiltonian H outputs a single scalar and is SO(3) invariant
-2. **Dynamics from ∇H only** - Time evolution comes exclusively from Hamilton's equations, NOT message passing
-3. **Manual symplectic integration** - Custom symplectic integrators preserve phase space structure
-4. **Independently ablatable components** - Every module can be toggled for controlled experiments
-5. **Rare-regime evaluation prioritized** - Focus on generalization to unseen orbital regimes
+## Central Idea
+
+When the true Hamiltonian of a physical system contains terms that are unknown or computationally intractable, we can learn corrections while preserving the symplectic structure that governs long-term stability.
+
+```
+H_true = H_known + H_unknown
+```
+
+H-GNN parameterizes the unknown correction as a graph neural network:
+
+```
+H_theta = H_known + Phi_theta
+```
+
+The key insight: **structure preservation is not optional**. Non-symplectic methods (vanilla GNNs + RK4) perform *worse* than physics-only baselines, while symplectic integration enables stable learning.
+
+---
+
+## Theoretical Foundation
+
+### Backward Error Interpretation
+
+A symplectic integrator applied to an approximate Hamiltonian exactly solves a *nearby* Hamiltonian (the modified Hamiltonian). Our formulation:
+
+```
+H = H_base + dt^2 * alpha * (1/N) * sum(Phi_ij)
+```
+
+Here:
+- `dt^2` scaling aligns with backward error analysis
+- `alpha` is a learnable magnitude (prevents gradient imbalance)
+- `1/N` normalization ensures per-particle force stability
+
+### Why Symplectic Matters
+
+| Method | T=50 Improvement | Energy Drift |
+|--------|------------------|--------------|
+| H-GNN (symplectic) | **+21%** | 2.8 |
+| Vanilla GNN (RK4) | **-4%** | 7.8 |
+| Physics only | baseline | 0.9 |
+
+Non-symplectic methods **destroy** learned corrections over time. The symplectic constraint is essential, not merely helpful.
+
+### Long-Horizon Stability
+
+H-GNN maintains positive improvement even at 500 integration steps:
+
+| Horizon | Improvement |
+|---------|-------------|
+| T=50 | +17.6% |
+| T=100 | +11.6% |
+| T=200 | +0.9% |
+| T=500 | +4.9% |
+
+---
 
 ## Architecture
 
-Each node state: `z_i = (q_i, p_i)` where `q_i, p_i ∈ ℝ³`
+**State**: Each node `z_i = (q_i, p_i)` with position and momentum in R^3
 
-Total Hamiltonian:
+**Hamiltonian**:
 ```
-H_G = Σᵢ H_orbit(zᵢ) + λ Σ_{(i,j)∈E} Φ_θ(zᵢ, zⱼ)
+H = sum_i H_orbit(z_i) + dt^2 * alpha * (1/N) * sum_{i,j} Phi(z_i, z_j)
 ```
 
-Dynamics:
+**Dynamics**: Hamilton's equations with symplectic integration
 ```
-ż = J ∇H_G(z)
+dq/dt = dH/dp,  dp/dt = -dH/dq
 ```
+
+**Key constraint**: Time evolution comes from gradients of H only, never from message passing directly.
+
+---
+
+## Core Claims (Validated)
+
+| Claim | Evidence |
+|-------|----------|
+| 1. Symplectic structure is necessary | Vanilla GNN < 0% (worse than physics) |
+| 2. H-GNN learns real corrections | Non-zero Phi, +15-23% improvement |
+| 3. Long-horizon stable | T=500: +4.9% |
+| 4. Learnability threshold exists | epsilon < 5 fails |
+| 5. Multi-scale training helps | T=50: +13.4% mean |
+
+---
+
+## Quick Start
+
+```python
+import torch
+from h_gnn.models.hgnn import HGNN
+
+# Load frozen model
+checkpoint = torch.load('hgnn_final_v1.0.pt')
+
+model = HGNN(
+    mu=398600.4418,
+    interaction_radius=20000.0,
+    hidden_dims=[64, 64, 32],
+    use_dt_scaling=True,
+    alpha_init=1e-4,
+).float()
+
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
+# Predict trajectory
+q_final, p_final = model(q0, p0, n_steps=50, dt=60.0)
+```
+
+---
 
 ## Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/your-repo/h-gnn.git
 cd h-gnn
-
-# Create environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Optional: Install FAISS for GPU
-pip install faiss-gpu  # Requires CUDA
-
-# Optional: Install e3nn for SO(3) equivariance (Phase 3)
-pip install e3nn
 ```
 
-## Quick Start
-
-### Phase 1: Validate Symplectic Integration
-
-```bash
-python -m h_gnn.train --phase 1
-```
-
-Expected output:
-- Symplectic Euler: bounded oscillatory energy error
-- Vanilla Euler: linear energy drift (diverges)
-- RK4: slow drift
-
-### Phase 2: Train Graph Hamiltonian
-
-```bash
-python -m h_gnn.train --phase 2
-```
-
-### Phase 4: Rare-Regime Evaluation
-
-```bash
-python -m h_gnn.train --phase 4
-```
-
-### Full Pipeline
-
-```bash
-python -m h_gnn.train --config h_gnn/config.yaml
-```
+---
 
 ## Project Structure
 
 ```
 h_gnn/
-├── data/
-│   ├── synthetic_catalog.py   # Orbital element generation
-│   └── tle_parser.py          # TLE parsing and SGP4
 ├── models/
-│   ├── hamiltonian.py         # Two-body Hamiltonian
-│   ├── interaction.py         # Learned interaction potential
-│   ├── graph.py               # FAISS graph construction
-│   ├── hgnn.py                # Main H-GNN architecture
-│   └── baselines.py           # GNN baselines for comparison
+│   ├── hamiltonian.py      # Graph Hamiltonian with Phi
+│   ├── interaction.py      # SO(3)-invariant interaction MLP
+│   └── hgnn.py             # Main architecture
 ├── integrators/
-│   ├── symplectic.py          # Symplectic Euler, Störmer-Verlet
-│   └── baselines.py           # Vanilla Euler, RK4
+│   └── symplectic.py       # Stormer-Verlet integrator
 ├── experiments/
-│   ├── rare_regime.py         # Rare-regime generalization
-│   ├── scaling.py             # O(N log N) scaling analysis
-│   └── equivariance_test.py   # SO(3) invariance validation
-├── train.py                   # Main training script
-├── eval.py                    # Evaluation metrics
-└── config.yaml                # Configuration file
+│   ├── backward_error_training.py  # Training with dt^2 scaling
+│   ├── baseline_comparison.py      # H-GNN vs vanilla GNN
+│   └── epsilon_sweep.py            # Learnability threshold
+└── physics/
+    └── multibody.py        # Ground truth N-body Hamiltonian
 ```
 
-## Key Experiments
+---
 
-### 1. Integrator Comparison (Phase 1)
+## Key Files
 
-Validates that symplectic integrators preserve Hamiltonian structure:
+| File | Purpose |
+|------|---------|
+| `hgnn_final_v1.0.pt` | Frozen model checkpoint |
+| `EXPERIMENTAL_RESULTS.md` | Validated claims with data |
+| `FINAL_MODEL.md` | Model specification |
 
-```python
-from h_gnn.integrators import SymplecticEuler, StormerVerlet
-from h_gnn.integrators.baselines import VanillaEuler, RK4
-from h_gnn.models import TwoBodyHamiltonian
-
-hamiltonian = TwoBodyHamiltonian(mu=398600.4418)
-integrators = {
-    "Symplectic": SymplecticEuler(dt=60.0),
-    "Verlet": StormerVerlet(dt=60.0),
-    "Euler": VanillaEuler(dt=60.0),
-    "RK4": RK4(dt=60.0),
-}
-```
-
-### 2. Rare-Regime Generalization (Phase 4)
-
-Tests whether Hamiltonian structure improves out-of-distribution performance:
-
-- **Train**: Equatorial orbits (inclination 0-20°)
-- **Test**: Polar orbits (inclination 60-90°)
-
-Success criterion: H-GNN degrades ≥10% less than baseline GNNs.
-
-### 3. Scaling Analysis
-
-Target complexity: O(N log N) via FAISS radius search
-
-```bash
-python -m h_gnn.experiments.scaling --max-n 5000
-```
-
-## Configuration
-
-Key parameters in `config.yaml`:
-
-```yaml
-physics:
-  mu: 398600.4418      # Earth GM (km³/s²)
-
-integration:
-  dt: 60.0             # Time step (seconds)
-  integrator: "symplectic_euler"
-
-model:
-  interaction:
-    strength: 0.01     # λ coupling constant
-    radius: 1000.0     # Interaction radius (km)
-    hidden_dims: [64, 64, 32]
-```
-
-## Metrics (Non-Negotiable)
-
-Every experiment must log:
-
-- **Energy drift** per object
-- **Angular momentum drift**
-- **Rare-event recall** 
-- **False negative rate**
-- **Runtime scaling exponent**
-- **Memory usage**
-
-## Ablations
-
-| Ablation | Command |
-|----------|---------|
-| Pure two-body (λ=0) | `model.disable_interaction()` |
-| No symplectic | Use `VanillaEuler` integrator |
-| Equivariant interaction | Enable `e3nn` in config |
-
-## Expected Results
-
-### Phase 1 Validation
-- Symplectic: max energy drift < 1%
-- Verlet: max energy drift < 0.1%
-- Euler: diverges
-
-### Phase 4 Evaluation
-- If rare-regime improvement ≥ 10-15%: Strong ML conference submission
-- If modest but stable: Structure-preserving physical learning paper
-- If no improvement: Pivot to long-horizon simulation learning
+---
 
 ## Citation
 
 ```bibtex
-@article{hgnn2024,
-  title={Hamiltonian Graph Neural Networks for Orbital Mechanics},
-  author={Your Name},
-  year={2024}
+@article{hgnn2026,
+  title={Learning Structured Corrections to Incomplete Hamiltonians 
+         via Symplectic Neural Parameterization},
+  author={...},
+  year={2026}
 }
 ```
 
