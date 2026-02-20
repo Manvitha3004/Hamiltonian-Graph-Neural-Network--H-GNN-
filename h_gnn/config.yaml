@@ -1,0 +1,264 @@
+# H-GNN Configuration
+# Hamiltonian Graph Neural Network for Orbital Mechanics
+
+#==============================================================================
+# Experiment Settings
+#==============================================================================
+experiment_name: "hgnn_baseline"
+wandb_project: "h-gnn"
+seed: 42
+device: "cpu"  # or "cuda"
+
+#==============================================================================
+# Physics Parameters
+#==============================================================================
+physics:
+  # Earth's gravitational parameter (km³/s²)
+  mu: 398600.4418
+  
+  # Earth radius (km)
+  R_earth: 6378.137
+  
+  # J2 perturbation coefficient (optional, Phase 3)
+  J2: 1.08263e-3
+  
+  # Include J2 perturbation in ground truth data
+  # When True, the model must learn to compensate for J2
+  include_J2: true
+
+#==============================================================================
+# Integration Settings
+#==============================================================================
+integration:
+  # Time step (seconds)
+  dt: 60.0
+  
+  # Integrator type: symplectic_euler, stormer_verlet
+  integrator: "symplectic_euler"
+  
+  # Phase 1 validation steps
+  validation_steps: 1000
+  
+  # Training rollout steps
+  rollout_steps: 10
+  
+  # Evaluation steps
+  eval_steps: 100
+
+#==============================================================================
+# Model Architecture
+#==============================================================================
+model:
+  # Interaction potential settings
+  interaction:
+    # Coupling strength λ
+    strength: 0.01
+    
+    # Interaction radius for graph construction (km)
+    radius: 1000.0
+    
+    # Hidden dimensions for MLP
+    hidden_dims: [64, 64, 32]
+    
+    # Activation function: silu, relu, tanh, gelu
+    activation: "silu"
+    
+    # Use smooth cutoff function
+    use_cutoff: true
+    
+    # Output non-negativity via softplus
+    softplus_output: true
+  
+  # Graph construction
+  graph:
+    # Maximum neighbors per node
+    max_neighbors: 50
+    
+    # Use FAISS for neighbor search (faster for large N)
+    use_faiss: true
+    
+    # Include self-loops
+    self_loops: false
+
+#==============================================================================
+# Training Settings
+#==============================================================================
+training:
+  # Number of training objects
+  n_objects: 500
+  
+  # Number of epochs
+  n_epochs: 200
+  
+  # Learning rate (reduced for stability)
+  lr: 3.0e-4
+  
+  # Weight decay (L2 regularization)
+  weight_decay: 1.0e-5
+  
+  # Batch size (for batched training)
+  batch_size: 64
+  
+  # Gradient clipping (reduced for stability)
+  grad_clip: 0.5
+  
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine_warmup"
+    warmup_epochs: 10
+    min_lr: 1.0e-6
+  
+  # Physics regularization weight (adaptive during training)
+  energy_reg_weight: 0.5
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 20
+    min_delta: 1.0e-6
+  
+  # Curriculum learning
+  curriculum:
+    enabled: true
+    min_rollout: 3
+    max_rollout: 10
+
+#==============================================================================
+# Data Generation
+#==============================================================================
+data:
+  # Synthetic catalog settings
+  synthetic:
+    # Altitude range (km)
+    altitude_range: [400, 2000]
+    
+    # Maximum eccentricity
+    eccentricity_max: 0.1
+    
+    # Training inclination range (radians) - equatorial
+    train_inclination: [0, 0.349]  # 0-20 degrees
+    
+    # Test inclination range (radians) - polar (rare regime)
+    test_inclination: [1.047, 1.571]  # 60-90 degrees
+    
+    # Number of conjunction scenarios to inject
+    n_conjunctions_train: 10
+    n_conjunctions_test: 5
+  
+  # TLE data settings (optional)
+  tle:
+    enabled: false
+    file_path: ""
+
+#==============================================================================
+# Evaluation Metrics
+#==============================================================================
+evaluation:
+  # Physics metrics
+  track_energy_drift: true
+  track_angular_momentum: true
+  track_eccentricity: true
+  
+  # ML metrics
+  track_rare_regime_recall: true
+  track_false_negative_rate: true
+  track_calibration: true
+  
+  # Conjunction threshold (km)
+  conjunction_threshold: 10.0
+  
+  # Scaling analysis
+  scaling:
+    enabled: true
+    n_objects_list: [50, 100, 200, 500, 1000]
+
+#==============================================================================
+# Baseline Models
+#==============================================================================
+baselines:
+  # Pure two-body (λ=0)
+  pure_twobody:
+    enabled: true
+  
+  # Vanilla GNN (message passing)
+  vanilla_gnn:
+    enabled: true
+    hidden_dim: 128
+    n_layers: 3
+    aggregation: "sum"
+  
+  # SE(3) Equivariant GNN
+  equivariant_gnn:
+    enabled: false  # Requires e3nn
+    hidden_dim: 64
+    n_layers: 2
+    lmax: 2
+
+#==============================================================================
+# Ablation Studies
+#==============================================================================
+ablations:
+  # Interaction strength sweep
+  lambda_sweep:
+    enabled: true
+    values: [0.0, 0.001, 0.01, 0.1, 1.0]
+  
+  # Integrator comparison
+  integrator_comparison:
+    enabled: true
+    integrators: ["symplectic_euler", "stormer_verlet", "vanilla_euler", "rk4"]
+  
+  # Rollout length
+  rollout_sweep:
+    enabled: true
+    steps: [1, 5, 10, 20, 50, 100]
+
+#==============================================================================
+# Logging and Checkpoints
+#==============================================================================
+logging:
+  # Log frequency (epochs)
+  log_every: 1
+  
+  # Validation frequency
+  validate_every: 5
+  
+  # Save checkpoints
+  save_checkpoints: true
+  checkpoint_dir: "checkpoints"
+  
+  # Save best model
+  save_best: true
+  
+  # Visualization
+  plot_trajectories: true
+  plot_energy: true
+
+#==============================================================================
+# Phase-Specific Settings
+#==============================================================================
+phases:
+  # Phase 1: Two-body validation
+  phase1:
+    enabled: true
+    n_steps: 1000
+    success_criteria:
+      symplectic_max_drift: 0.01
+      verlet_max_drift: 0.001
+  
+  # Phase 2: Graph Hamiltonian
+  phase2:
+    enabled: true
+    n_objects: [50, 100, 200]
+    stability_test:
+      lambda_stable_max: 0.1
+  
+  # Phase 3: SO(3) Equivariance (optional)
+  phase3:
+    enabled: false
+    rotation_test_tolerance: 1.0e-5
+  
+  # Phase 4: Rare regime evaluation
+  phase4:
+    enabled: true
+    success_threshold: 0.10  # 10% improvement required

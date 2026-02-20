@@ -1,0 +1,80 @@
+{
+  "hgnn": {
+    "equatorial": {
+      "mse": 9661.532969846763,
+      "energy_drift": 0.000451070984127,
+      "L_drift": 2.9120472390786745e-05
+    },
+    "low": {
+      "mse": 6603.6634016786065,
+      "energy_drift": 0.00023369015252683312,
+      "L_drift": 5.382150266086683e-05
+    },
+    "medium": {
+      "mse": 6469.168568163168,
+      "energy_drift": 5.958661131444387e-05,
+      "L_drift": 3.1688090530224144e-05
+    },
+    "high": {
+      "mse": 7264.7358889820225,
+      "energy_drift": 0.0004322371678426862,
+      "L_drift": 0.00016040384070947766
+    },
+    "polar": {
+      "mse": 6890.970662543994,
+      "energy_drift": 0.0002710541884880513,
+      "L_drift": 6.074539487599395e-05
+    },
+    "generalization_gap": 0.7132378147495251
+  },
+  "pure_twobody": {
+    "equatorial": {
+      "mse": 6384.447108188244,
+      "energy_drift": 9.736081847222522e-05,
+      "L_drift": 0.0
+    },
+    "low": {
+      "mse": 6341.662098936261,
+      "energy_drift": 7.338517752941698e-05,
+      "L_drift": 0.0
+    },
+    "medium": {
+      "mse": 6290.238280818637,
+      "energy_drift": 6.494718400062993e-05,
+      "L_drift": 0.0
+    },
+    "high": {
+      "mse": 6723.753002950846,
+      "energy_drift": 0.0001239468256244436,
+      "L_drift": 0.0
+    },
+    "polar": {
+      "mse": 6643.764622286873,
+      "energy_drift": 0.00013556917838286608,
+      "L_drift": 0.0
+    },
+    "generalization_gap": 1.0406170667098247
+  },
+  "vanilla_gnn": {
+    "equatorial": {
+      "mse": NaN,
+      "error": "mat1 and mat2 must have the same dtype, but got Double and Float"
+    },
+    "low": {
+      "mse": NaN,
+      "error": "mat1 and mat2 must have the same dtype, but got Double and Float"
+    },
+    "medium": {
+      "mse": NaN,
+      "error": "mat1 and mat2 must have the same dtype, but got Double and Float"
+    },
+    "high": {
+      "mse": NaN,
+      "error": "mat1 and mat2 must have the same dtype, but got Double and Float"
+    },
+    "polar": {
+      "mse": NaN,
+      "error": "mat1 and mat2 must have the same dtype, but got Double and Float"
+    }
+  }
+}

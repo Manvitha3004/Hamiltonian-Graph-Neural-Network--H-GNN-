@@ -1,0 +1,26 @@
+{
+  "relative_error": {
+    "mean": 1.0,
+    "std": 0.0,
+    "median": 1.0,
+    "min": 1.0,
+    "max": 1.0
+  },
+  "cosine_similarity": {
+    "mean": 0.0,
+    "std": 0.0,
+    "median": 0.0
+  },
+  "magnitude_ratio": {
+    "mean": 0.0,
+    "std": 0.0
+  },
+  "true_magnitude": {
+    "mean": 3.2598295093229774e-06,
+    "std": 2.448184130466741e-07
+  },
+  "learned_magnitude": {
+    "mean": 0.0,
+    "std": 0.0
+  }
+}

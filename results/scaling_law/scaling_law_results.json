@@ -1,0 +1,182 @@
+[
+  {
+    "epsilon": 5,
+    "horizon": 10,
+    "epsilon_times_T": 50,
+    "mse_hgnn": 13.665144486563058,
+    "mse_twobody": 14.58603081816098,
+    "improvement": 10.036522405379392,
+    "mean_phi": 0.002080360398710297
+  },
+  {
+    "epsilon": 5,
+    "horizon": 25,
+    "epsilon_times_T": 125,
+    "mse_hgnn": 286.64290328998936,
+    "mse_twobody": 328.4490012964738,
+    "improvement": 16.24308748025729,
+    "mean_phi": 0.002080360398710297
+  },
+  {
+    "epsilon": 5,
+    "horizon": 50,
+    "epsilon_times_T": 250,
+    "mse_hgnn": 8228.548157899486,
+    "mse_twobody": 8821.521825605148,
+    "improvement": 15.036934576927862,
+    "mean_phi": 0.002080360398710297
+  },
+  {
+    "epsilon": 5,
+    "horizon": 100,
+    "epsilon_times_T": 500,
+    "mse_hgnn": 118816.77348548635,
+    "mse_twobody": 121314.43994795551,
+    "improvement": 7.042077080292028,
+    "mean_phi": 0.002080360398710297
+  },
+  {
+    "epsilon": 10,
+    "horizon": 10,
+    "epsilon_times_T": 100,
+    "mse_hgnn": 55.692512847707,
+    "mse_twobody": 60.583660435615265,
+    "improvement": 11.325949568811621,
+    "mean_phi": 0.004149147029178177
+  },
+  {
+    "epsilon": 10,
+    "horizon": 25,
+    "epsilon_times_T": 250,
+    "mse_hgnn": 1074.0543866578203,
+    "mse_twobody": 1270.902768721716,
+    "improvement": 19.389301172881947,
+    "mean_phi": 0.004149147029178177
+  },
+  {
+    "epsilon": 10,
+    "horizon": 50,
+    "epsilon_times_T": 500,
+    "mse_hgnn": 29428.4498848362,
+    "mse_twobody": 32699.205692094845,
+    "improvement": 18.760875336949976,
+    "mean_phi": 0.004149147029178177
+  },
+  {
+    "epsilon": 10,
+    "horizon": 100,
+    "epsilon_times_T": 1000,
+    "mse_hgnn": 453523.49088142184,
+    "mse_twobody": 466396.4205944858,
+    "improvement": 9.039110193010162,
+    "mean_phi": 0.004149147029178177
+  },
+  {
+    "epsilon": 25,
+    "horizon": 10,
+    "epsilon_times_T": 250,
+    "mse_hgnn": 373.6406810022069,
+    "mse_twobody": 408.74038619376336,
+    "improvement": 10.896841021819448,
+    "mean_phi": 0.010060919874040357
+  },
+  {
+    "epsilon": 25,
+    "horizon": 25,
+    "epsilon_times_T": 625,
+    "mse_hgnn": 5707.833164483493,
+    "mse_twobody": 7077.01701505069,
+    "improvement": 23.65534839977242,
+    "mean_phi": 0.010060919874040357
+  },
+  {
+    "epsilon": 25,
+    "horizon": 50,
+    "epsilon_times_T": 1250,
+    "mse_hgnn": 104316.9340478564,
+    "mse_twobody": 128616.5615999345,
+    "improvement": 23.385149372303676,
+    "mean_phi": 0.010060919874040357
+  },
+  {
+    "epsilon": 25,
+    "horizon": 100,
+    "epsilon_times_T": 2500,
+    "mse_hgnn": 1373467.2108587213,
+    "mse_twobody": 1500451.8941857032,
+    "improvement": 9.343051870171436,
+    "mean_phi": 0.010060919874040357
+  },
+  {
+    "epsilon": 50,
+    "horizon": 10,
+    "epsilon_times_T": 500,
+    "mse_hgnn": 2124.84249276628,
+    "mse_twobody": 2263.766278854385,
+    "improvement": 8.491953185314946,
+    "mean_phi": 0.0168622821114697
+  },
+  {
+    "epsilon": 50,
+    "horizon": 25,
+    "epsilon_times_T": 1250,
+    "mse_hgnn": 27811.921805118607,
+    "mse_twobody": 33121.599398354745,
+    "improvement": 19.001159256552288,
+    "mean_phi": 0.0168622821114697
+  },
+  {
+    "epsilon": 50,
+    "horizon": 50,
+    "epsilon_times_T": 2500,
+    "mse_hgnn": 399131.90094323613,
+    "mse_twobody": 499026.0729613197,
+    "improvement": 20.863073916797,
+    "mean_phi": 0.0168622821114697
+  },
+  {
+    "epsilon": 50,
+    "horizon": 100,
+    "epsilon_times_T": 5000,
+    "mse_hgnn": 3403177.7196956663,
+    "mse_twobody": 3923196.0727598835,
+    "improvement": 12.02499095042392,
+    "mean_phi": 0.0168622821114697
+  },
+  {
+    "epsilon": 100,
+    "horizon": 10,
+    "epsilon_times_T": 1000,
+    "mse_hgnn": 11334.157731145024,
+    "mse_twobody": 11782.969767587127,
+    "improvement": 7.6173491551104275,
+    "mean_phi": 0.02281696670756826
+  },
+  {
+    "epsilon": 100,
+    "horizon": 25,
+    "epsilon_times_T": 2500,
+    "mse_hgnn": 165105.77784060256,
+    "mse_twobody": 183520.58982753218,
+    "improvement": 11.901356324241993,
+    "mean_phi": 0.02281696670756826
+  },
+  {
+    "epsilon": 100,
+    "horizon": 50,
+    "epsilon_times_T": 5000,
+    "mse_hgnn": 2166036.9211292844,
+    "mse_twobody": 2466461.972002528,
+    "improvement": 13.356575611698906,
+    "mean_phi": 0.02281696670756826
+  },
+  {
+    "epsilon": 100,
+    "horizon": 100,
+    "epsilon_times_T": 10000,
+    "mse_hgnn": 13772614.120701564,
+    "mse_twobody": 16141556.000875069,
+    "improvement": 10.16580986427352,
+    "mean_phi": 0.02281696670756826
+  }
+]
