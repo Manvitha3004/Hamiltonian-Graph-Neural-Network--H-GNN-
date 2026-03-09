@@ -55,7 +55,7 @@ class HGNN(nn.Module):
         self,
         mu: float = 398600.4418,
         interaction_strength: float = 0.01,
-        interaction_radius: float = 1000.0,
+        interaction_radius: float = 50000.0,  # 50,000 km covers LEO to GEO
         hidden_dims: list = [64, 64, 32],
         integrator_type: str = "symplectic_euler",
         dt: float = 60.0,  # seconds
@@ -63,8 +63,8 @@ class HGNN(nn.Module):
         max_neighbors: int = 50,
         device: str = "cpu",
         create_graph: bool = False,  # For backprop through integration
-        softplus_output: bool = True,  # False for learning signed corrections
-        normalize_features: bool = False,  # Normalize MLP input features
+        softplus_output: bool = False,  # Allow signed corrections for Hamiltonian learning
+        normalize_features: bool = True,  # Normalize MLP input features for stability
         init_gain: float = 0.1,  # Control initial Φ output magnitude
         use_dt_scaling: bool = False,  # dt²-structured correction (backward-error aligned)
         alpha_init: float = 1e-4,  # Initial value for learnable magnitude α
@@ -94,6 +94,7 @@ class HGNN(nn.Module):
             self.interaction = InteractionPotential(
                 hidden_dims=hidden_dims,
                 softplus_output=softplus_output,
+                normalize_features=normalize_features,  # FIX: was missing!
                 init_gain=init_gain,
             )
         
