@@ -253,7 +253,7 @@ class GraphHamiltonian(nn.Module):
         interaction_potential: Optional[nn.Module] = None,
         interaction_strength: float = 0.01,  # Kept for backward compat, ignored if use_dt_scaling=True
         use_dt_scaling: bool = True,  # Use dt² scaling (backward error aligned)
-        alpha_init: float = 1e-4,  # Initial value for learnable magnitude
+        alpha_init: float = 0.5,  # Initial raw value (clamped alpha ≈ tanh(0.5)*0.01 ≈ 0.0046)
     ):
         super().__init__()
         self.H_orbit = orbit_hamiltonian
@@ -263,8 +263,19 @@ class GraphHamiltonian(nn.Module):
             "lambda_", 
             torch.tensor(interaction_strength, dtype=torch.float64)
         )
-        # Learnable global magnitude for interaction (α in H = H_base + dt² × α × (1/N) × Σ Φ)
-        self.alpha = nn.Parameter(torch.tensor(alpha_init, dtype=torch.float32))
+        # Learnable global magnitude for interaction (α in H = H_base + (dt/scale)² × α × (1/N) × Σ Φ)
+        # Raw parameter - will be clamped via tanh during forward pass
+        # Initialize such that clamped alpha is reasonable: tanh(0.5)*0.01 ≈ 0.0046
+        self._alpha_raw = nn.Parameter(torch.tensor(alpha_init, dtype=torch.float32))
+        self.alpha_max = 0.01  # Maximum allowed alpha magnitude
+        
+        # Time normalization constant (dt in seconds → normalized units)
+        self.dt_scale = 100.0  # Normalize: dt_normalized = dt / dt_scale
+    
+    @property
+    def alpha(self):
+        """Get clamped alpha value (limited to ±alpha_max)."""
+        return torch.tanh(self._alpha_raw) * self.alpha_max
     
     def forward(
         self,
@@ -277,7 +288,7 @@ class GraphHamiltonian(nn.Module):
         Compute total graph Hamiltonian.
         
         Uses backward-error aligned dt² scaling when use_dt_scaling=True:
-            H = H_base + dt² * (1/N) * Σ Φ_tilde(z_i, z_j)
+            H = H_base + (dt/scale)² * α * (1/N) * Σ Φ_tilde(z_i, z_j)
         
         Args:
             q: Positions of shape (N, 3)
@@ -307,11 +318,12 @@ class GraphHamiltonian(nn.Module):
             n_particles = q.shape[0]
             H_interaction = 0.5 * phi_ij.sum() / n_particles
             
-            # Apply scaling: H = H_base + dt² × α × (1/N) × Σ Φ
+            # Apply scaling: H = H_base + (dt/scale)² × α × (1/N) × Σ Φ
             if self.use_dt_scaling and dt is not None:
-                # Backward-error aligned with learnable α
-                # α controls global magnitude, dt² provides correct scaling
-                scale = (dt ** 2) * self.alpha
+                # Normalize dt to prevent huge dt² values
+                dt_normalized = dt / self.dt_scale
+                # Clamped alpha via property
+                scale = (dt_normalized ** 2) * self.alpha
             else:
                 # Legacy lambda scaling
                 scale = self.lambda_

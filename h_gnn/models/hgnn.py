@@ -67,7 +67,7 @@ class HGNN(nn.Module):
         normalize_features: bool = True,  # Normalize MLP input features for stability
         init_gain: float = 0.1,  # Control initial Φ output magnitude
         use_dt_scaling: bool = False,  # dt²-structured correction (backward-error aligned)
-        alpha_init: float = 1e-4,  # Initial value for learnable magnitude α
+        alpha_init: float = 0.5,  # Raw value (clamped: tanh(0.5)*0.01 ≈ 0.0046)
     ):
         super().__init__()
         
