@@ -1,0 +1,64 @@
+{
+  "long_horizon": {
+    "15": {
+      "Physics-Only": {
+        "rmse_position_km": 5.613254070281982,
+        "mae_position_km": 5.3815828050885886,
+        "max_position_km": 7.226419244493757,
+        "rmse_velocity_km_s": 0.01029228139668703,
+        "mae_velocity_km_s": 0.009944695447172438,
+        "max_velocity_km_s": 0.012756087950297765,
+        "energy_drift": 1.5140540686583596e-06
+      },
+      "H-GNN": {
+        "rmse_position_km": 232.14943368094308,
+        "mae_position_km": 231.3907710484096,
+        "max_position_km": 253.8878413609096,
+        "rmse_velocity_km_s": 0.17579135298728943,
+        "mae_velocity_km_s": 0.17401113680430821,
+        "max_velocity_km_s": 0.2055014669895172,
+        "energy_drift": 0.008325058966875076
+      }
+    },
+    "30": {
+      "Physics-Only": {
+        "rmse_position_km": 21.758509318033855,
+        "mae_position_km": 20.575297037760418,
+        "max_position_km": 29.449360529581707,
+        "rmse_velocity_km_s": 0.028234036018451054,
+        "mae_velocity_km_s": 0.02588244030872981,
+        "max_velocity_km_s": 0.04068371281027794,
+        "energy_drift": 4.449810830919887e-06
+      },
+      "H-GNN": {
+        "rmse_position_km": 643.1799519856771,
+        "mae_position_km": 642.8737386067709,
+        "max_position_km": 662.1039021809896,
+        "rmse_velocity_km_s": 0.37827742099761963,
+        "mae_velocity_km_s": 0.3779781560103099,
+        "max_velocity_km_s": 0.39723949631055194,
+        "energy_drift": 0.0033860766949752965
+      }
+    },
+    "60": {
+      "Physics-Only": {
+        "rmse_position_km": 70.41331481933594,
+        "mae_position_km": 69.00296020507812,
+        "max_position_km": 88.273681640625,
+        "rmse_velocity_km_s": 0.06968264281749725,
+        "mae_velocity_km_s": 0.0680842250585556,
+        "max_velocity_km_s": 0.08743637055158615,
+        "energy_drift": 4.442782483238261e-06
+      },
+      "H-GNN": {
+        "rmse_position_km": 661.5471801757812,
+        "mae_position_km": 661.4547729492188,
+        "max_position_km": 673.6171264648438,
+        "rmse_velocity_km_s": 0.3585699498653412,
+        "mae_velocity_km_s": 0.35839658975601196,
+        "max_velocity_km_s": 0.37571775913238525,
+        "energy_drift": 0.003276615170761943
+      }
+    }
+  }
+}
