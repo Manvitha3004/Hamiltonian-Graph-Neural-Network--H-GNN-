@@ -22,9 +22,20 @@ import argparse
 from datetime import datetime
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Optional
+from torch.utils.data import DataLoader
 
 from h_gnn.data.tle_loader import generate_trajectory_dataset, convert_to_hgnn_format
 from h_gnn.models.hgnn import HGNN
+from anomaly_injection import (
+    AnomalyTrajectoryDataset,
+    build_trajectory_windows,
+    generate_anomaly_dataset,
+)
+from anomaly_detection import (
+    AnomalyDetectionHead,
+    evaluate_anomaly_detection,
+    train_detection_head,
+)
 
 
 # ============================================================================
@@ -318,6 +329,9 @@ def train_on_tle_data(
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     run_baselines: bool = True,
     create_plots: bool = True,
+    run_anomaly_phase: bool = True,
+    detection_epochs: int = 20,
+    anomaly_rate: float = 0.3,
 ):
     """
     Train H-GNN on real satellite data with all improvements.
@@ -334,6 +348,10 @@ def train_on_tle_data(
     print(f"Alpha init: {alpha_init}")
     print(f"Hidden dims: {hidden_dims}")
     print(f"Energy loss weight: {energy_loss_weight}")
+    print(f"Run anomaly phase: {run_anomaly_phase}")
+    if run_anomaly_phase:
+        print(f"Detection epochs: {detection_epochs}")
+        print(f"Anomaly rate: {anomaly_rate}")
     print()
     
     # ========================================================================
@@ -609,6 +627,110 @@ def train_on_tle_data(
         
         # Training curves
         plot_training_curves(train_losses, val_losses, alphas, "training_curves.png")
+
+    # ========================================================================
+    # PHASE 2: ANOMALY DETECTION HEAD TRAINING (H-GNN FROZEN)
+    # ========================================================================
+    detection_head = None
+    detection_metrics = None
+    detection_history = None
+    maneuver_metadata = None
+
+    if run_anomaly_phase:
+        print("\n" + "=" * 70)
+        print("PHASE 2: Anomaly Detection Head Training")
+        print("=" * 70)
+
+        print("Building trajectory windows for anomaly dataset...")
+        normal_windows = build_trajectory_windows(
+            trajectory_data["positions"],
+            trajectory_data["velocities"],
+            window_size=horizon + 1,
+            stride=max(1, horizon // 2),
+        )
+
+        print("Injecting synthetic maneuvers...")
+        anomaly_trajectories, anomaly_labels, maneuver_metadata = generate_anomaly_dataset(
+            normal_windows,
+            anomaly_rate=anomaly_rate,
+            rng_seed=42,
+        )
+
+        n_samples = int(anomaly_labels.shape[0])
+        n_train_det = max(1, int(0.8 * n_samples))
+        perm = torch.randperm(n_samples)
+        train_idx = perm[:n_train_det]
+        test_idx = perm[n_train_det:]
+
+        train_data = {
+            "positions": anomaly_trajectories["positions"][train_idx],
+            "velocities": anomaly_trajectories["velocities"][train_idx],
+        }
+        test_data = {
+            "positions": anomaly_trajectories["positions"][test_idx],
+            "velocities": anomaly_trajectories["velocities"][test_idx],
+        }
+        train_labels = anomaly_labels[train_idx]
+        test_labels = anomaly_labels[test_idx]
+
+        print(
+            f"Anomaly dataset: total={n_samples}, train={len(train_labels)}, "
+            f"test={len(test_labels)}, anomaly_fraction={float(anomaly_labels.mean()):.2f}"
+        )
+
+        anomaly_train_ds = AnomalyTrajectoryDataset(train_data, train_labels)
+        anomaly_test_ds = AnomalyTrajectoryDataset(test_data, test_labels)
+
+        anomaly_train_loader = DataLoader(
+            anomaly_train_ds,
+            batch_size=batch_size,
+            shuffle=True,
+        )
+        anomaly_test_loader = DataLoader(
+            anomaly_test_ds,
+            batch_size=batch_size,
+            shuffle=False,
+        )
+
+        detection_head = AnomalyDetectionHead().to(device)
+
+        detection_history = train_detection_head(
+            model,
+            detection_head,
+            anomaly_train_loader,
+            epochs=detection_epochs,
+        )
+
+        detection_metrics = evaluate_anomaly_detection(
+            model,
+            detection_head,
+            anomaly_test_loader,
+        )
+
+        print("\nDetection Results:")
+        print(f"  AUROC:      {detection_metrics['auroc']:.4f}")
+        print(f"  Precision:  {detection_metrics['precision']:.4f}")
+        print(f"  Recall:     {detection_metrics['recall']:.4f}")
+        print(f"  F1:         {detection_metrics['f1']:.4f}")
+        print(
+            "  Avg score (nominal/anomalous): "
+            f"{detection_metrics['avg_anomaly_score_nominal']:.4f} / "
+            f"{detection_metrics['avg_anomaly_score_anomalous']:.4f}"
+        )
+
+        det_save_path = Path("trained_hgnn_anomaly_head.pt")
+        torch.save(
+            {
+                "detection_head_state_dict": detection_head.state_dict(),
+                "detection_metrics": detection_metrics,
+                "detection_history": detection_history,
+                "anomaly_rate": anomaly_rate,
+                "detection_epochs": detection_epochs,
+                "timestamp": datetime.now().isoformat(),
+            },
+            det_save_path,
+        )
+        print(f"Detection head saved to {det_save_path}")
     
     # ========================================================================
     # SAVE MODEL
@@ -631,6 +753,10 @@ def train_on_tle_data(
         'train_losses': train_losses,
         'val_losses': val_losses,
         'alphas': alphas,
+        'detection_head_state_dict': detection_head.state_dict() if detection_head is not None else None,
+        'detection_metrics': detection_metrics,
+        'detection_history': detection_history,
+        'maneuver_metadata': maneuver_metadata,
         'timestamp': datetime.now().isoformat(),
     }, save_path)
     
@@ -669,6 +795,7 @@ def run_scaling_experiment(
             n_epochs=n_epochs,
             run_baselines=False,
             create_plots=False,
+            run_anomaly_phase=False,
         )
         
         results[n_sat] = metrics
@@ -714,6 +841,9 @@ if __name__ == "__main__":
     parser.add_argument("--alpha-init", type=float, default=0.5, help="Initial raw alpha (clamped via tanh*0.01)")
     parser.add_argument("--energy-weight", type=float, default=1e-6, help="Energy loss weight")
     parser.add_argument("--scaling", action="store_true", help="Run scaling experiment")
+    parser.add_argument("--skip-anomaly-phase", action="store_true", help="Skip phase-2 anomaly detector training")
+    parser.add_argument("--detection-epochs", type=int, default=20, help="Detection head training epochs")
+    parser.add_argument("--anomaly-rate", type=float, default=0.3, help="Fraction of synthetic anomalous trajectories")
     
     args = parser.parse_args()
     
@@ -735,4 +865,7 @@ if __name__ == "__main__":
             lr=args.lr,
             alpha_init=args.alpha_init,
             energy_loss_weight=args.energy_weight,
+            run_anomaly_phase=not args.skip_anomaly_phase,
+            detection_epochs=args.detection_epochs,
+            anomaly_rate=args.anomaly_rate,
         )
